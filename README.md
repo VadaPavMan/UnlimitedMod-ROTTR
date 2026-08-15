@@ -3,6 +3,7 @@
 A lightweight GUI-based mod menu for Rise of the Tomb Raider that allows you to enable Unlimited Resources, Unlimited Ammo, and Unlimited Survival Instinct while the game is running. Designed for easy use and quick toggling without restarting the game.
 
 # Note:
+
 This mod trainer is currently in beta phase. The goal is to test it with more versions of ROTTR.exe so it can work properly for as many versions as possible.
 
 ## Current Features
@@ -31,7 +32,7 @@ To Build And Compile The Source:
 
 - `pip install pymem`
 - `pip install pyinstaller`
-- `pyinstaller --onefile --noconsole --name "ROTTR-Mod_Menu" --icon=mod.ico --add-data "mod.ico;." rottr_trainer_gui.py`
+- `pyinstaller --onefile --noconsole --name "ROTTR-Mod_Menu" --icon=assets/mod.ico --add-data "assets/mod.ico;." --version-file version.txt --uac-admin --noupx --clean src/rottr_trainer_gui.py`
 
 ## Notes
 
