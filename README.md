@@ -1,3 +1,5 @@
+**NOTE: This mod may be detected as a threat by Windows Defender, as it scans Game Process Memory for read & write operations to apply modifications. This mod does not contain any sort of malware, and to keep everything transparent, I have also shared the source code along with the mod in the src folder.**
+
 # ROTTR Mod Menu
 
 A lightweight GUI-based mod menu for Rise of the Tomb Raider that allows you to enable Unlimited Resources, Unlimited Ammo, and Unlimited Survival Instinct while the game is running. Designed for easy use and quick toggling without restarting the game.
