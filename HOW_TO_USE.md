@@ -5,10 +5,14 @@
 - Download the ZIP file containing the mod.
 - Extract the ZIP file to a folder on your computer.
 
-## Step 2: Locate the Executable
-
-- Open the extracted folder.
-- Find the file named ROTTR-Mod_Menu.exe.
+## Step 2: Install Python
+- Download and Install Python To your System also configure it properly.
+- Open the extracted folder in VS Code or Cmd.
+- Type this in terminal of this folder directory:
+- - `pip install pymem`
+  - `pip install pyinstaller`
+  - `pyinstaller --onefile --noconsole --name "ROTTR-Mod_Menu" --icon=assets/mod.ico --add-data "assets/mod.ico;." --version-file version.txt --uac-admin --noupx --clean src/rottr_trainer_gui.py`
+- After the above process you will get the fully compiled .exe -> `ROTTR-Mod_Menu.exe`. 
 
 ## Step 3: Run as Administrator
 
