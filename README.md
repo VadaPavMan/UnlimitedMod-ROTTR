@@ -24,13 +24,13 @@ More features may be added in the future as new values are found and tested usin
 - assets\ - contains icon and related asset files
 - ROTTR-Mod_Menu.exe - the main executable program
 
-## How to Use
+## How to Use [You need to compile the source for exe]
 
 Please read [HOW_TO_USE.md](HOW_TO_USE.md) for full step-by-step instructions.
 
-## Compile (For Devs)
+## How to Compile
 
-To Build And Compile The Source:
+To Build And Compile The Source, Make Sure To `Install Python First` Then Follow Along:
 
 - `pip install pymem`
 - `pip install pyinstaller`
