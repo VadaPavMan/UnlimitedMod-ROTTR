@@ -1,0 +1,10 @@
+build/
+build
+build/..
+
+dist/
+dist
+dist/..
+
+
+ROTTR-Mod_Menu.spec
