@@ -4,6 +4,7 @@
 
 ## Fixes
 
+- Fixed Without Reload
 - Removed Endurance Mode, including Infinite Warmth and Infinite Hunger.
 - Removed Double Resource Gains.
 - Removed Maintain 99 Skill Points.
