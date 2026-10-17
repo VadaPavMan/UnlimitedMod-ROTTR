@@ -5,7 +5,8 @@
 A lightweight GUI-based mod menu for Rise of the Tomb Raider that allows you to enable Unlimited Resources, Unlimited Ammo, and Unlimited Survival Instinct while the game is running. Designed for easy use and quick toggling without restarting the game.
 
 # Preview:
-<img width="441" height="579" alt="Screenshot 2026-10-16 213515" src="https://github.com/user-attachments/assets/014b3a35-f810-4c4e-aae5-4ca76e792ca5" />
+<img width="452" height="593" alt="Screenshot 2026-10-17 140751" src="https://github.com/user-attachments/assets/56149bb4-55e0-4158-93f8-6e366cf032da" />
+
 
 
 # Note:
