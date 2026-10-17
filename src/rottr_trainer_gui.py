@@ -1,8 +1,7 @@
 """ROTTR Mod Menu v2.7.0
 
 A lightweight, toggleable trainer for Rise of the Tomb Raider.
-The unstable health patch remains removed. Includes conservative AOB-based
-skill-point and Endurance hooks plus an experimental resource-gain multiplier.
+The unstable health patch remains removed. Includes only the retained ammo, survival-instinct, and resource features.
 """
 
 from __future__ import annotations
@@ -22,8 +21,7 @@ from typing import Optional
 import pymem
 import pymem.process
 
-
-APP_VERSION = "2.7.0"
+APP_VERSION = "2.1.0"
 PROCESS_NAME = "ROTTR.exe"
 POLL_INTERVAL = 1.5
 
@@ -32,7 +30,9 @@ MEM_RESERVE = 0x2000
 MEM_RELEASE = 0x8000
 PAGE_EXECUTE_READWRITE = 0x40
 
-kernel32 = ctypes.WinDLL("kernel32", use_last_error=True) if sys.platform == "win32" else None
+kernel32 = (
+    ctypes.WinDLL("kernel32", use_last_error=True) if sys.platform == "win32" else None
+)
 
 
 if kernel32 is not None:
@@ -89,7 +89,7 @@ def rel_jmp(from_addr: int, to_addr: int) -> bytes:
             f"Relative jump out of range: source=0x{from_addr:X}, "
             f"destination=0x{to_addr:X}"
         )
-    return b"\xE9" + struct.pack("<i", displacement)
+    return b"\xe9" + struct.pack("<i", displacement)
 
 
 def alloc_near(
@@ -270,9 +270,13 @@ class Mod:
             return None
 
         self.addr = int(module.lpBaseOfDll) + matches[0] + self.match_offset
-        if self.addr < int(module.lpBaseOfDll) or self.addr + (self.patch_len or 0) > int(module.lpBaseOfDll) + int(module.SizeOfImage):
+        if self.addr < int(module.lpBaseOfDll) or self.addr + (
+            self.patch_len or 0
+        ) > int(module.lpBaseOfDll) + int(module.SizeOfImage):
             self.addr = None
-            self.last_error = "Calculated patch address falls outside ROTTR.exe; refusing to patch."
+            self.last_error = (
+                "Calculated patch address falls outside ROTTR.exe; refusing to patch."
+            )
             return None
         if len(matches) > 1:
             self.last_error = (
@@ -293,7 +297,9 @@ class Mod:
             return False
         if self.cave_code is None:
             if self.patch_bytes is None or len(self.patch_bytes) != self.patch_len:
-                self.last_error = "Patch bytes do not match the configured patch length."
+                self.last_error = (
+                    "Patch bytes do not match the configured patch length."
+                )
                 return False
         elif self.patch_len < 5:
             self.last_error = "A code-cave hook needs at least five patch bytes."
@@ -312,7 +318,9 @@ class Mod:
                     process.process_handle, self.addr, cave_size
                 )
                 if not self.cave_addr:
-                    raise OSError("Could not allocate executable memory near the patch.")
+                    raise OSError(
+                        "Could not allocate executable memory near the patch."
+                    )
 
                 jump_back = rel_jmp(
                     self.cave_addr + len(self.cave_code), self.addr + self.patch_len
@@ -354,7 +362,9 @@ class Mod:
         if not self.applied:
             return True
         if self.addr is None or self.original is None:
-            self.last_error = "Cannot restore patch: original bytes/address are missing."
+            self.last_error = (
+                "Cannot restore patch: original bytes/address are missing."
+            )
             return False
         try:
             write_code(process, self.addr, self.original)
@@ -445,7 +455,9 @@ class MultiSiteMod:
         if self.applied:
             return True
         if not self.patches:
-            self.last_error = self.last_error or "Reload-ammo signatures have not been located."
+            self.last_error = (
+                self.last_error or "Reload-ammo signatures have not been located."
+            )
             return False
         applied: list[Mod] = []
         for patch in self.patches:
@@ -484,8 +496,8 @@ class MultiSiteMod:
 AMMO_WITH_RELOAD_BASE = Mod(
     key="ammo_with_reload",
     label="Unlimited Ammo (with reload)",
-    pattern=b"\x8B\x87\x88\x05\x00\x00",
-    cave_code=b"\x8B\x87\x90\x05\x00\x00\x89\x87\x88\x05\x00\x00",
+    pattern=b"\x8b\x87\x88\x05\x00\x00",
+    cave_code=b"\x8b\x87\x90\x05\x00\x00\x89\x87\x88\x05\x00\x00",
     patch_len=6,
     note="Copies the reserve-ammo field into the magazine field at this code path.",
 )
@@ -502,7 +514,7 @@ AMMO_WITH_RELOAD = MultiSiteMod(AMMO_WITH_RELOAD_BASE, expected_matches=3)
 AMMO_NO_RELOAD = Mod(
     key="ammo_no_reload",
     label="Unlimited Ammo (no reload needed)",
-    pattern=b"\x29\x18\x49\x8B\x86\x70\x03\x00\x00",
+    pattern=b"\x29\x18\x49\x8b\x86\x70\x03\x00\x00",
     patch_bytes=b"\x90\x90",
     patch_len=2,
     note="Disables the ammo decrement instruction identified in ROTTR.CT.",
@@ -512,7 +524,7 @@ AMMO_NO_RELOAD = Mod(
 SURVIVAL = Mod(
     key="survival",
     label="Unlimited Survival Instinct",
-    pattern=b"\xF3\x0F\x11\x46\x10\x0F",
+    pattern=b"\xf3\x0f\x11\x46\x10\x0f",
     patch_bytes=b"\x90\x90\x90\x90\x90",
     patch_len=5,
 )
@@ -521,89 +533,23 @@ RESOURCES = Mod(
     key="resources",
     label="Unlimited Resources",
     note="Gather at least one of a resource first.",
-    pattern=b"\x66\x89\x18\x48\x8B\x8D\xA8\x03\x00\x00",
+    pattern=b"\x66\x89\x18\x48\x8b\x8d\xa8\x03\x00\x00",
     # Preserve the flags from the original MOV instruction. The comparison
     # inside this hook changes RFLAGS, while the original instruction does not.
     # Leaking changed flags could affect unrelated game logic after the hook.
     cave_code=(
-        b"\x9C"                                      # pushfq
-        b"\x51"                                      # push rcx
-        b"\x48\x8B\x08"                          # mov rcx,[rax]
-        b"\x66\x3B\xD9"                          # cmp bx,cx
-        b"\x7E\x05"                                # jle skip_write
-        b"\x66\x89\x18"                          # mov [rax],bx
-        b"\xEB\x00"                                # short jump (next instruction)
-        b"\x59"                                      # pop rcx
-        b"\x9D"                                      # popfq
-        b"\x48\x8B\x8D\xA8\x03\x00\x00"  # original next instruction
+        b"\x9c"  # pushfq
+        b"\x51"  # push rcx
+        b"\x48\x8b\x08"  # mov rcx,[rax]
+        b"\x66\x3b\xd9"  # cmp bx,cx
+        b"\x7e\x05"  # jle skip_write
+        b"\x66\x89\x18"  # mov [rax],bx
+        b"\xeb\x00"  # short jump (next instruction)
+        b"\x59"  # pop rcx
+        b"\x9d"  # popfq
+        b"\x48\x8b\x8d\xa8\x03\x00\x00"  # original next instruction
     ),
     patch_len=10,
-)
-
-# Experimental resource-gain multiplier derived from the legacy table's
-# "New Double Resource" code path. It repeats the original 16-bit addition,
-# then replays the pointer increment. This changes the amount added when this
-# path runs; it does NOT increase the game's maximum carrying capacity.
-DOUBLE_RESOURCE_GAIN = Mod(
-    key="double_resource_gain",
-    label="Double Resource Gains (experimental)",
-    pattern=b"\x66\x01\x43\x0C\x48\x83\xC7\x08",
-    cave_code=(
-        b"\x66\x01\x43\x0C"  # add word ptr [rbx+0C],ax (original)
-        b"\x66\x01\x43\x0C"  # repeat addition to double this gain
-        b"\x48\x83\xC7\x08"  # add rdi,08 (original)
-    ),
-    patch_len=8,
-    require_unique=True,
-    note=(
-        "Experimental legacy-table port. Doubles gains on this specific code path; "
-        "does not increase maximum ammo/resource carrying capacity."
-    ),
-)
-
-
-# Legacy Cheat Engine "Skills" feature. The AOB begins at two complete
-# instructions (7 bytes). The cave sets the count to 99, then replays both
-# original instructions. A unique signature is required; unsupported builds
-# safely refuse the toggle instead of guessing an address.
-SKILL_POINTS = Mod(
-    key="skill_points",
-    label="Maintain 99 Skill Points",
-    pattern=b"\x8B\x58\x44\x8B\x44\x24\x38",
-    cave_code=(
-        b"\xC7\x40\x44\x63\x00\x00\x00"  # mov dword ptr [rax+44],99
-        b"\x8B\x58\x44"                          # mov ebx,[rax+44]
-        b"\x8B\x44\x24\x38"                    # mov eax,[rsp+38]
-    ),
-    patch_len=7,
-    require_unique=True,
-    note="Legacy table port; applies only when its full 7-byte AOB is unique.",
-)
-
-# Endurance-mode needs from the newer supplied table. These replace one
-# 5-byte instruction at a time and require an exact unique match. These
-# signatures are short, so they intentionally fail closed on ambiguous builds.
-INFINITE_WARMTH = Mod(
-    key="infinite_warmth",
-    label="Infinite Warmth (Endurance)",
-    pattern=b"\xF3\x0F\x11\x70\x28",  # movss [rax+28],xmm6
-    cave_code=b"\xC7\x40\x28\x00\x00\x7A\x44",  # [rax+28] = 1000.0f
-    patch_len=5,
-    require_unique=True,
-    note="Endurance-mode hook; needs one exact match in this executable.",
-)
-
-INFINITE_HUNGER = Mod(
-    key="infinite_hunger",
-    label="Infinite Hunger (Endurance)",
-    pattern=b"\xF3\x0F\x10\x48\x28",  # movss xmm1,[rax+28]
-    cave_code=(
-        b"\xC7\x40\x28\x00\x00\x7A\x44"  # [rax+28] = 1000.0f
-        b"\xF3\x0F\x10\x48\x28"              # replay movss xmm1,[rax+28]
-    ),
-    patch_len=5,
-    require_unique=True,
-    note="Endurance-mode hook; needs one exact match in this executable.",
 )
 
 
@@ -621,7 +567,9 @@ class Engine:
         self.desired = {key: False for key in self.mods}
         self._status_text = ""
         self._last_attach_attempt = 0.0
-        self.thread = threading.Thread(target=self._loop, name="ROTTR-Trainer", daemon=True)
+        self.thread = threading.Thread(
+            target=self._loop, name="ROTTR-Trainer", daemon=True
+        )
         self.thread.start()
 
     def _emit(self, message: str, key: Optional[str] = None) -> None:
@@ -668,11 +616,15 @@ class Engine:
                 candidate.process_handle, PROCESS_NAME
             )
             if module is None:
-                raise RuntimeError(f"Module {PROCESS_NAME} was not found in the process.")
+                raise RuntimeError(
+                    f"Module {PROCESS_NAME} was not found in the process."
+                )
             self.pm = candidate
             self.module = module
             self.attached = True
-            self._set_status(f"Attached to {PROCESS_NAME}. Select the cheats to enable.")
+            self._set_status(
+                f"Attached to {PROCESS_NAME}. Select the cheats to enable."
+            )
             # Reapply the latest requested state after a game restart/re-attach.
             for key, enabled in self.desired.items():
                 if enabled:
@@ -710,8 +662,12 @@ class Engine:
 
         ok = mod.apply(self.pm)
         if ok:
-            details = f" (AOB matches: {mod.match_count})" if mod.match_count > 1 else ""
-            warning = f" — {mod.last_error}" if mod.last_error.startswith("Warning:") else ""
+            details = (
+                f" (AOB matches: {mod.match_count})" if mod.match_count > 1 else ""
+            )
+            warning = (
+                f" — {mod.last_error}" if mod.last_error.startswith("Warning:") else ""
+            )
             self._emit(f"{mod.label}: ON{details}{warning}", key)
         else:
             self._emit(f"{mod.label}: NOT ENABLED — {mod.last_error}", key)
@@ -872,59 +828,6 @@ class TrainerApp:
             font=("Segoe UI", 8),
         ).pack(anchor="w", padx=20)
 
-        self.double_resource_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(
-            frame,
-            text="Double Resource Gains (experimental)",
-            variable=self.double_resource_var,
-            command=self.on_double_resource_change,
-        ).pack(anchor="w")
-        ttk.Label(
-            frame,
-            text="(doubles gains on one legacy code path; not a capacity increase)",
-            foreground=note_fg,
-            font=("Segoe UI", 8),
-        ).pack(anchor="w", padx=20)
-
-        self.skill_points_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(
-            frame,
-            text="Maintain 99 Skill Points",
-            variable=self.skill_points_var,
-            command=self.on_skill_points_change,
-        ).pack(anchor="w")
-        ttk.Label(
-            frame,
-            text="(legacy signature; only applies when exactly one match is found)",
-            foreground=note_fg,
-            font=("Segoe UI", 8),
-        ).pack(anchor="w", padx=20)
-
-        ttk.Separator(frame).pack(fill="x", pady=5)
-        ttk.Label(frame, text="Endurance Mode", font=("Segoe UI", 9, "bold")).pack(
-            anchor="w"
-        )
-        self.warmth_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(
-            frame,
-            text="Infinite Warmth",
-            variable=self.warmth_var,
-            command=self.on_warmth_change,
-        ).pack(anchor="w")
-        self.hunger_var = tk.BooleanVar(value=False)
-        ttk.Checkbutton(
-            frame,
-            text="Infinite Hunger",
-            variable=self.hunger_var,
-            command=self.on_hunger_change,
-        ).pack(anchor="w")
-        ttk.Label(
-            frame,
-            text="(legacy code signatures; each hook requires exactly one match)",
-            foreground=note_fg,
-            font=("Segoe UI", 8),
-        ).pack(anchor="w", padx=20)
-
         ttk.Separator(frame).pack(fill="x", pady=5)
         self.status_var = tk.StringVar(value=f"Waiting for {PROCESS_NAME}...")
         self.latest_status = self.status_var.get()
@@ -933,10 +836,6 @@ class TrainerApp:
             "ammo_no_reload": False,
             "survival": False,
             "resources": False,
-            "double_resource_gain": False,
-            "skill_points": False,
-            "infinite_warmth": False,
-            "infinite_hunger": False,
         }
         ttk.Label(
             frame,
@@ -953,10 +852,6 @@ class TrainerApp:
                 AMMO_NO_RELOAD,
                 SURVIVAL,
                 RESOURCES,
-                DOUBLE_RESOURCE_GAIN,
-                SKILL_POINTS,
-                INFINITE_WARMTH,
-                INFINITE_HUNGER,
             ],
             self.status_queue.put,
         )
@@ -981,16 +876,10 @@ class TrainerApp:
             active_labels.append("Survival Instinct")
         if self.actual_states.get("resources"):
             active_labels.append("Resources + Ammo")
-        if self.actual_states.get("double_resource_gain"):
-            active_labels.append("Double Resource Gains")
-        if self.actual_states.get("skill_points"):
-            active_labels.append("99 Skill Points")
-        if self.actual_states.get("infinite_warmth"):
-            active_labels.append("Infinite Warmth")
-        if self.actual_states.get("infinite_hunger"):
-            active_labels.append("Infinite Hunger")
         lines = [self.latest_status]
-        lines.append("Applied cheats: " + (", ".join(active_labels) if active_labels else "none"))
+        lines.append(
+            "Applied cheats: " + (", ".join(active_labels) if active_labels else "none")
+        )
         return "\n".join(lines)
 
     def poll_status(self) -> None:
@@ -1025,27 +914,6 @@ class TrainerApp:
     def on_survival_change(self) -> None:
         self.engine.request(
             "apply" if self.survival_var.get() else "remove", "survival"
-        )
-
-    def on_double_resource_change(self) -> None:
-        self.engine.request(
-            "apply" if self.double_resource_var.get() else "remove",
-            "double_resource_gain",
-        )
-
-    def on_skill_points_change(self) -> None:
-        self.engine.request(
-            "apply" if self.skill_points_var.get() else "remove", "skill_points"
-        )
-
-    def on_warmth_change(self) -> None:
-        self.engine.request(
-            "apply" if self.warmth_var.get() else "remove", "infinite_warmth"
-        )
-
-    def on_hunger_change(self) -> None:
-        self.engine.request(
-            "apply" if self.hunger_var.get() else "remove", "infinite_hunger"
         )
 
     def on_resources_change(self) -> None:
